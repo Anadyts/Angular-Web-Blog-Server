@@ -86,9 +86,18 @@ app.post('/api/create-blog', async (req, res) => {
 
 app.get('/api/blog', async (req, res) => {
     const limit = parseInt(req.query.limit) || 8
-    const query = "SELECT * FROM articles ORDER BY created_at DESC LIMIT $1"
-    const result = await pool.query(query, [limit])
-
+    const search = req.query.search || ''
+    let query = ''
+    let values = []
+    if(search === ''){
+        query = "SELECT * FROM articles ORDER BY created_at DESC LIMIT $1"
+        values =  [limit]
+    }else{
+        query = "SELECT * FROM articles WHERE title ILIKE $1 ORDER BY created_at DESC"
+        values = [`%${search}%`]
+    }
+    
+    const result = await pool.query(query, values)
     if(result.rows.length > 0){
         const articles = result.rows
         res.status(200).json({
