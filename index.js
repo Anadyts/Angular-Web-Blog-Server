@@ -109,6 +109,34 @@ app.get('/api/blog', async (req, res) => {
     })
     }
 })
+
+app.post('/api/article', async (req, res) => {
+    const {article_id} = req.body
+    const query = "SELECT * FROM articles WHERE article_id = $1"
+    const result = await pool.query(query, [article_id])
+
+    if(result.rows.length !== 0){
+        const article = result.rows[0]
+        
+        const queryUser = "SELECT * FROM users WHERE user_id = $1"
+        const resultUser = await pool.query(queryUser, [article.author_id])
+        if(resultUser.rows[0] !== 0){
+            const user = resultUser.rows[0]
+
+            res.status(200).json({
+                message: 'Get Article success',
+                article: article,
+                author: user.username
+            })
+        }
+        
+        
+    }else{
+        res.status(400).json({
+            message: 'Get Article failed',
+        })
+    }
+})
 const PORT = process.env.PORT
 app.listen(PORT, () => {
     console.log("Server is running on port", PORT)
