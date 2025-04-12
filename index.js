@@ -42,7 +42,6 @@ app.post('/api/login', async (req, res) => {
 })
 
 app.post('/api/auth', (req, res) => {
-    console.log('auth')
     const {token} = req.body
     if(token){
         jwt.verify(token, SECRET_KEY, (err, decoded) => {
@@ -56,6 +55,31 @@ app.post('/api/auth', (req, res) => {
                     user: decoded
                 })
             }
+        })
+    }
+})
+
+app.post('/api/create-blog', async (req, res) => {
+    const {title, content, user_id} = req.body
+    if(title.trim() && content.trim()){
+        const query = "INSERT INTO articles(title, content, author_id) VALUES($1, $2, $3)"
+        const values = [title, content, user_id]
+        const result = await pool.query(query, values)
+
+        if(result.rowCount > 0){
+            res.status(201).json({
+                message: 'Create Blog Success'
+            })
+        }else{
+            console.log('Create Blog Failed')
+            res.status(400).json({
+                message: 'Create Blog Failed'
+            })
+        }
+        
+    }else{
+        res.status(400).json({
+            message: 'Create Blog Failed'
         })
     }
 })
