@@ -83,6 +83,22 @@ app.post('/api/create-blog', async (req, res) => {
         })
     }
 })
+
+app.get('/api/blog', async (req, res) => {
+    const query = "SELECT * FROM articles ORDER BY created_at DESC"
+    const result = await pool.query(query)
+
+    if(result.rows.length > 0){
+        const articles = result.rows
+        res.status(200).json({
+            message: 'Get Blog success',
+            articles: articles
+        })
+    }else{res.status(401).json({
+        message: 'Get Blog Failed'
+    })
+    }
+})
 const PORT = process.env.PORT
 app.listen(PORT, () => {
     console.log("Server is running on port", PORT)
