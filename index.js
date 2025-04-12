@@ -85,8 +85,9 @@ app.post('/api/create-blog', async (req, res) => {
 })
 
 app.get('/api/blog', async (req, res) => {
-    const query = "SELECT * FROM articles ORDER BY created_at DESC"
-    const result = await pool.query(query)
+    const limit = parseInt(req.query.limit) || 8
+    const query = "SELECT * FROM articles ORDER BY created_at DESC LIMIT $1"
+    const result = await pool.query(query, [limit])
 
     if(result.rows.length > 0){
         const articles = result.rows
