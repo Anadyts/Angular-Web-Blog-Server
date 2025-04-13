@@ -137,6 +137,81 @@ app.post('/api/article', async (req, res) => {
         })
     }
 })
+
+app.get('/api/comment', async (req, res) => {
+    const articleId = parseInt(req.query.article_id)
+    const limit = parseInt(req.query.limit) || 5
+
+    const query = `
+        SELECT c.*, u.username 
+        FROM comments c
+        INNER JOIN users u ON c.user_id = u.user_id
+        WHERE c.article_id = $1
+        ORDER BY c.created_at ASC
+        LIMIT $2 
+    `
+
+    try {
+        const values = [articleId, limit]
+        const result = await pool.query(query, values)
+
+        const countQuery = `
+            SELECT COUNT(*) AS total
+            FROM comments
+            WHERE article_id = $1
+        `
+        const countResult = await pool.query(countQuery, [articleId])
+        const totalComments = parseInt(countResult.rows[0].total)
+        const totalPage = Math.ceil(totalComments / limit)
+
+        res.status(200).json({
+            comments: result.rows,
+            totalPage
+        })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: 'Server Error' })
+    }
+})
+
+app.post('/api/new-comment', async (req, res) => {
+    const { comment, user_id, article_id } = req.body;
+    const insertQuery = `
+        INSERT INTO comments(content, user_id, article_id)
+        VALUES($1, $2, $3)
+        RETURNING *
+    `;
+    const insertValues = [comment, user_id, article_id];
+
+    try {
+        const result = await pool.query(insertQuery, insertValues);
+
+        if (result.rowCount > 0) {
+            const newComment = result.rows[0];
+
+            // ดึง username จาก users
+            const userQuery = "SELECT username FROM users WHERE user_id = $1";
+            const userResult = await pool.query(userQuery, [user_id]);
+            const username = userResult.rows[0]?.username || 'Unknown';
+
+            res.status(200).json({
+                message: 'New comment success',
+                comment: {
+                    ...newComment,
+                    username: username
+                }
+            });
+        } else {
+            res.status(400).json({
+                message: 'New comment failed'
+            });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
 const PORT = process.env.PORT
 app.listen(PORT, () => {
     console.log("Server is running on port", PORT)
