@@ -3,6 +3,7 @@ const express = require('express')
 const cors = require('cors')
 const {pool} = require('./pool')
 const jwt = require('jsonwebtoken')
+const argon = require('argon2')
 
 const app = express()
 app.use(express.json())
@@ -22,7 +23,8 @@ app.post('/api/login', async (req, res) => {
             username: user.username,
         }, SECRET_KEY, {expiresIn: '1h'})
 
-        if(user.password === password){
+        const isPasswordValid = await argon.verify(user.password, password)
+        if(isPasswordValid){
             res.status(200).json({
                 username:user.username,
                 user_id: user.user_id,
@@ -39,6 +41,31 @@ app.post('/api/login', async (req, res) => {
             message: 'Login Failed'
         })
     }
+})
+
+app.post('/api/register', async (req, res) => {
+    const {username, password} = req.body
+    
+    const queryUsername = "SELECT * FROM users WHERE username = $1"
+    const resultUsername = await pool.query(queryUsername, [username])
+
+    if(resultUsername.rows.length === 0){
+        const queryRegister = "INSERT INTO users(username, password) VALUES($1, $2)"
+        const hashedPassword = await argon.hash(password)
+        const values = [username, hashedPassword]
+        const resultRegister = await pool.query(queryRegister, values) 
+        if(resultRegister.rowCount !== 0){
+            console.log(username, hashedPassword)
+            res.status(200).json({
+                message: 'Register Succeed'
+            })
+        }
+    }else{
+        res.status(400).json({
+            message: 'This Username is already used'
+        })
+    }
+    
 })
 
 app.post('/api/auth', (req, res) => {
