@@ -212,6 +212,68 @@ app.post('/api/new-comment', async (req, res) => {
     }
 });
 
+app.get('/api/like', async (req, res) => {
+    const user_id = parseInt(req.query.user_id)
+    const article_id = parseInt(req.query.article_id)
+    
+    const query = "SELECT * FROM article_likes WHERE user_id = $1 AND article_id = $2"
+    const values = [user_id, article_id]
+    const result = await pool.query(query, values)
+
+    if(result.rows.length > 0){
+        const like = result.rows[0]
+        res.status(200).json({
+            like
+        })
+    }else{
+        res.status(404).json({
+            message: 'Not found user like'
+        })
+    }
+
+})
+
+app.delete('/api/unlike', async (req, res) => {
+    const user_id = parseInt(req.query.user_id)
+    const article_id = parseInt(req.query.article_id)
+    const query = "DELETE FROM article_likes WHERE user_id = $1 AND article_id = $2"
+    const values = [user_id, article_id]
+    const result = await pool.query(query, values)
+
+    if(isNaN(user_id) || isNaN(article_id)){
+        res.status(400).json({
+            message: "Not found user id or article_id"
+        })
+    }
+
+    if(result.rowCount !== 0){
+        res.status(200).json({
+            message: "Delete like success"
+        })
+    }else{
+        res.status(400).json({
+            message: "Delete like failed"
+        })
+    }
+})
+
+app.post('/api/like', async (req, res) => {
+    const {user_id, article_id} = req.body
+    const query = "INSERT INTO article_likes(user_id, article_id) VALUES($1, $2)"
+    const values = [user_id, article_id]
+    const result = await pool.query(query, values)
+
+    if(result.rowCount !== 0 ){
+        res.status(200).json({
+            message: 'Add like success'
+        })
+    }else{
+        res.status(400).json({
+            message: 'Add like failed'
+        })
+    }
+})
+
 const PORT = process.env.PORT
 app.listen(PORT, () => {
     console.log("Server is running on port", PORT)
