@@ -274,6 +274,23 @@ app.post('/api/like', async (req, res) => {
     }
 })
 
+app.get('/api/article', async (req, res) => {
+    const user_id = parseInt(req.query.user_id)
+    const query = "SELECT * FROM articles WHERE author_id = $1"
+    const result = await pool.query(query, [user_id])
+
+    if(result.rows.length > 0){
+        const articles = result.rows
+        res.status(200).json({
+            articles
+        })
+    }else{
+        res.status(400).json({
+            message: 'Not found article'
+        })
+    }
+})
+
 const PORT = process.env.PORT
 app.listen(PORT, () => {
     console.log("Server is running on port", PORT)
